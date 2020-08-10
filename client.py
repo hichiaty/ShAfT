@@ -4,6 +4,10 @@ import tweepy
 import uuid
 import os
 import zlib
+import qrcode
+from pyzbar.pyzbar import decode
+from PIL import Image
+# we using QRs cause twitter limit
 
 if not os.path.exists('id'):
     client_id = uuid.uuid4().hex
@@ -12,6 +16,22 @@ if not os.path.exists('id'):
 else:
     with open('id','rb') as f:
         client_id = f.read().decode()
+
+def generate_qr(message):
+    # encode to base_64 and generate_qr
+    message = base64.b64encode(message.encode('utf-8'))
+    qr = qrcode.make(message)
+    qr.save('message.png')
+
+def read_qr(img):
+    message = decode(Image.open(img))[0].data.decode()
+    return base64.b64decode(message).decode('utf-8')
+
+def post_message(message):
+    return 0
+
+def read_message(tweet):
+    return 0
 
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
