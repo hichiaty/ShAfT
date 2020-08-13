@@ -116,4 +116,4 @@ if __name__ == '__main__':
     api = tweepy.API(auth)
 
     stream = ShellStream(auth = auth, listener=ClientListener(client_id, api, aeskey))
-    stream.start('1239374094')
+    stream.start(api_keys['my_user_id'])
