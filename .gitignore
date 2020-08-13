@@ -137,5 +137,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-#Twitter api keys
+#api keys, aes key and clients db
 api_keys.py
+id
+key
+clients.db
+
