@@ -25,7 +25,7 @@ api_keys['access_token'] = 'YOUR_ACCESS_TOKEN'
 api_keys['access_token_secret'] = 'YOUR_ACCESS_TOKEN_SECRET'
 api_keys['my_user_id'] = 'YOUR TWITTER USER ID'
 ```
-Tahen you should be good to go assuming you have all the requrements installed!
+Then you should be good to go assuming you have all the requrements installed!
 
 ## Server
 
