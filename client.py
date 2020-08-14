@@ -26,8 +26,12 @@ class ClientListener(tweepy.StreamListener):
 
     def on_data(self, raw_data):
         # process raw stream data, read qr, pipe message
-        print(raw_data)
-        self.process_raw(raw_data)
+        if 'delete' in raw_data:
+            pass
+        elif 'limit' in raw_data:
+            pass
+        else:
+            self.process_raw(raw_data)
         return True
 
     def process_raw(self, raw_data):
