@@ -139,7 +139,7 @@ cython_debug/
 
 #api keys, aes key and clients db
 api_keys.py
-id
-key
+*id
+*key
 clients.db
 
