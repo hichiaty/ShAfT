@@ -1,7 +1,7 @@
 # ShAfT: Shell over Api for Twitter
-
+### Server
 ![server_demo](https://raw.githubusercontent.com/hichiaty/ShAfT/master/demo/serve.gif)
-
+### Client
 ![client_demo](https://raw.githubusercontent.com/hichiaty/ShAfT/master/demo/client.gif)
 
 # Overview
