@@ -1,8 +1,8 @@
 # ShAfT: Shell over Api for Twitter
 
-![](https://raw.githubusercontent.com/hichiaty/ShAfT/master/demo/serve.gif)
+![server_demo](https://raw.githubusercontent.com/hichiaty/ShAfT/master/demo/serve.gif)
 
-![](https://raw.githubusercontent.com/hichiaty/ShAfT/master/demo/client.gif)
+![client_demo](https://raw.githubusercontent.com/hichiaty/ShAfT/master/demo/client.gif)
 
 # Overview
 
