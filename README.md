@@ -6,7 +6,7 @@
 
 # Overview
 
-This is a multi-client shell That uses Twitter's streaming and REST APIs to send and receive shell states between a client/server, No port forwarding needed, and the server need not be running at all times. Commands are encrypted with AES-256 and packaged as nice QR codes to avoid the classic character limit ;). feel free to contribute just for the banter, but as you can probably tell, this is by no means a realistic prospect because of the overhead, it was merely a fun project to get to know Twitter's API.
+This is a multi-client shell That uses Twitter's streaming and REST APIs to send and receive shell states between a client/server, No port forwarding needed, and the server need not be running at all times. Commands are encrypted with AES-256 and packaged as nice QR codes to avoid the classic character limit ;). feel free to contribute just for the banter, but as you can probably tell, this is by no means a realistic prospect, it was merely a fun project to get to know Twitter's API.
 
 
 # How to Use
